@@ -1,8 +1,10 @@
+import asyncio
 from datetime import datetime
 from decimal import Decimal
 
 import pytest
 
+from base_async_pipeline import BaseAsyncPipeline
 from super_mario import BasePipeline, process_pipe
 from super_mario.exceptions import ProgrammingException
 
@@ -97,3 +99,23 @@ def test_raise_error_on_wrong_run_arguments():
 
     with pytest.raises(ProgrammingException):
         SimplePipeline().run(a='1')
+
+
+def test_raise_error_on_not_all_pipes_async():
+    class SimplePipeline(BaseAsyncPipeline):
+        pipeline = [
+            'sum_numbers',
+            'pow_numbers',
+        ]
+        initial_arguments = [('a', int)]
+
+        @process_pipe
+        def sum_numbers(a):
+            return {'b': a + 1}
+
+        @process_pipe
+        async def pow_numbers(a, b):
+            return {'c': a ** b}
+
+    with pytest.raises(ProgrammingException):
+        asyncio.get_event_loop().run_until_complete(SimplePipeline().run(a=2))
