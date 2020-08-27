@@ -25,7 +25,7 @@ class BasePipeline:
 
     def __init__(self) -> None:
         super().__init__()
-        self.validate_pipeline_raise_on_error()
+        self._validate_pipeline_raise_on_error()
 
     @staticmethod
     def _validate_pipe_result_raise_on_error(pipe_result: ContextType, pipe_name: str) -> None:
@@ -35,7 +35,7 @@ class BasePipeline:
             )
 
     @classmethod
-    def validate_pipeline_raise_on_error(cls) -> None:
+    def _validate_pipeline_raise_on_error(cls) -> None:
         for pipe_name in cls.pipeline:
             if pipe_name not in cls.__dict__:
                 raise ProgrammingException(
@@ -43,7 +43,7 @@ class BasePipeline:
                 )
 
     @classmethod
-    def validate_run_arguments_raise_on_error(
+    def _validate_run_arguments_raise_on_error(
         cls,
         actual_run_arguments: Mapping[str, Any],
     ) -> None:
@@ -64,14 +64,14 @@ class BasePipeline:
                     f'to be of type {argument_type}.',
                 )
 
-    def get_pipe_signature_args(self, pipe_callable: Callable) -> Tuple[str, ...]:
+    def _get_pipe_signature_args(self, pipe_callable: Callable) -> Tuple[str, ...]:
         pipe_func = getattr(pipe_callable, '__func__', pipe_callable)
         pipe_signature = signature(pipe_func)
         pipe_args_names = pipe_signature.parameters.keys()
         return tuple(pipe_args_names)
 
-    def get_pipe_args(self, pipe_callable: Callable) -> ImmutableContext:
-        pipe_args_names = self.get_pipe_signature_args(pipe_callable)
+    def _get_pipe_args(self, pipe_callable: Callable) -> ImmutableContext:
+        pipe_args_names = self._get_pipe_signature_args(pipe_callable)
         for arg_name in pipe_args_names:
             if arg_name not in self.__context__:
                 raise ProgrammingException(
@@ -80,10 +80,11 @@ class BasePipeline:
                 )
         return {a: self.__context__[a] for a in pipe_args_names}
 
-    def handle_pipeline(self) -> ContextType:
+    def _handle_pipeline(self) -> ContextType:
+        result = None
         for pipe_name in self.pipeline:
             pipe = getattr(self, pipe_name)
-            pipe_args = self.get_pipe_args(pipe)
+            pipe_args = self._get_pipe_args(pipe)
 
             logger.debug(
                 f'Executing {pipe_name} with {format_object_for_logging(pipe_args)}...',
@@ -97,9 +98,9 @@ class BasePipeline:
         return result
 
     def run(self, **kwargs: Any) -> ContextType:
-        self.validate_run_arguments_raise_on_error(kwargs)
+        self._validate_run_arguments_raise_on_error(kwargs)
         self.__context__ = deepcopy(kwargs)
-        result = self.handle_pipeline()
+        result = self._handle_pipeline()
         return list(result.values())[0] if result else None
 
     def _validate_implicit_context_update(self, result: ContextType, pipe_name: str) -> None:

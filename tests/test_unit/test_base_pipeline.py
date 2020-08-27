@@ -20,7 +20,7 @@ def simple_pipeline():
 
 
 def test_get_pipe_args(simple_pipeline):
-    pipe_args = simple_pipeline.get_pipe_signature_args(simple_pipeline.simple_pipe)
+    pipe_args = simple_pipeline._get_pipe_signature_args(simple_pipeline.simple_pipe)
 
     assert 'simple_arg' in pipe_args
     assert 'another_simple_arg' not in pipe_args
